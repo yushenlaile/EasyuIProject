@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" type="text/css" href="./easyui/uimaker/easyui.css">
+    <link rel="stylesheet" type="text/css" href="./easyui/uimaker/icon.css">
+    <script type="text/javascript" src="./easyui/jquery.min.js"></script>
+    <script type="text/javascript" src="./easyui/jquery.easyui.min.js"></script>
+    <script type="text/javascript" src="./easyui/easyui-lang-zh_CN.js"></script>
+</head>
+<style>
+    label {
+
+        color: red;
+    }
+
+    tr {
+        margin-top: 10px;
+
+    }
+
+</style>
+<body>
+<!--表格-->
+<table id="dg" class="easyui-datagrid" data-options="fitColumns:true">
+</table>
+
+<!--对话框-->
+<div id="myadddialog">
+    <form id="myform1">
+        <table align="center" style="border-spacing: 0px 10px">
+                  <!--让一个隐藏的input去表示员工的id-->
+              <input type="text" style="display: none" name="id" class="userid"></input>
+            <tr style="margin-top: 10px ">
+                <td>
+                    名字：
+                </td>
+                <td>
+                    <input type="text" name="name">
+                </td>
+            </tr>
+
+            <tr>
+                <td>
+                    入职时间：
+                </td>
+                <td>
+                    <input id="ddss" type="text" class="easyui-datebox" required="required"
+                           data-options="width:150" name="date"></input>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    邮箱：
+                </td>
+                <td>
+                    <input type="text" class="easyui-validatebox" data-options="required:true,validType:'email'" name="email">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    状态：
+                </td>
+                <td>
+                    <input id="state" name="state">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    部门：
+                </td>
+                <td>    <!--department是对象名--id是其属性-->
+                    <input id="department" name="department.id">
+                </td>
+            </tr>
+
+
+        </table>
+
+    </form>
+</div>
+
+</body>
+<script>
+    /*下拉列表--部门*/
+    $('#department').combobox({
+        url: 'department.json',
+        valueField: 'id',/*选项的值是哪个字段*/
+        textField: 'name',/*选项显示的文本是哪个字段*/
+        width: 150,
+        editable: false,/*用户是否可以编辑下拉列表的选项*/
+        panelHeight: "auto",/*下拉列表面板的高度*/
+    });
+    /*设置默认选择项*/
+  //  $('#department').combobox("select", "技术部");
+
+    /*下拉列表--状态*/
+    $('#state').combobox({
+        valueField: 'value',/*选项的值是哪个字段*/
+        textField: 'label',/*选项显示的文本是哪个字段*/
+        width: 150,
+        panelHeight: "auto",/*下拉列表面板的高度*/
+        editable: false,/*用户是否可以编辑下拉列表的选项*/
+        data: [{  /*当选择比较少时，使用这个方式去设置选项的值和选项显示的数据--记录*/
+            label: '在职',
+            value: 'true'
+        }, {
+            label: '离职',
+            value: 'false'
+        },
+        ]
+    });
+    /*设置默认选择项*/
+ //   $('#state').combobox("select", "在职");
+
+
+    //------------------------------------对话框--------------------------------
+    $('#myadddialog').dialog({
+        title: 'xx',
+        width: 400,
+        height: 300,
+        closed: true,/*默认情况下对话框是否关闭*/
+        cache: false,
+        modal: false,/*是否对话框遮盖底部*/
+        buttons: [{
+            text: '保存',
+            iconCls: 'icon-add',
+            handler: function () {
+                /*区分不同操作的请求url*/
+                 var id= $(".userid").val();
+                 console.log(id);
+                 var url;
+                 /*如果id有值则是更新编辑操作*/
+                  if(id!=null&&id.length>0)
+                  {
+                      url="update.json"
+                  }
+                  /*id为null则是添加操作*/
+                  else {
+
+                      url="employee.json";
+                  }
+                /*使用ajax方式提交表单参数--这种ajax的形式是easyui封装好的--注意
+                * 但是它并不会自动将应答返回的JSON字符串向我们之前的ajax一样自动转JSON对象
+                * （之前我们设置期望的返回值类型是一个JSON，故内部会自动转换）
+                * 故现在我们要自己手动将应答返回的JSON字符串转为JSON
+                */
+                $('#myform1').form('submit', {
+                    url:url,/*请求URL地址*/
+                    onSubmit: function(){
+                        // do some check
+                        // return false to prevent submit;
+                    },
+                    success:function(data){  /*请求成功，应答返回数据时执行的方法*/
+                        /* data= $.parseJSON(data);*/
+                        data=JSON.parse(data);/*json字符串转为json对象*/
+                        if(data.success)
+                        {
+                            alert(data.msg);
+                            /*重新加载表格  */
+                            $('#dg').datagrid("reload");
+                            /*关闭对话框*/
+                            $('#myadddialog').dialog("close")
+                            //location.reload();
+                        }
+                        else{
+                            alert(data.msg);
+                        }
+                    }
+                });
+
+
+
+            }
+        },
+            {
+                iconCls: 'icon-cancel',
+                text: '关闭',
+                handler: function () {
+                    $('#myadddialog').dialog("close");
+                }
+            }]
+    })
+
+
+    /*---------------表格---------------------*/
+    $('#dg').datagrid({
+        url: 'datagrid_data.json',
+        columns: [[
+            {field: 'id', title: 'id', width: 150, align: 'center'},
+            {
+                field: 'name', title: 'Name', width: 150, align: 'center'
+            },
+            {field: 'date', title: 'date', width: 150, align: 'center'},
+            {field: 'email', title: 'email', width: 150, align: 'center'},
+            {
+                field: 'state', title: 'state', width: 150, align: 'center',
+                formatter: function (value, row, index) {
+                    if (row.state) {
+
+                        return "在职";
+                    } else {
+
+                        return "<label>离职</label>";
+                    }
+                }
+            },
+            {
+                field: 'department', title: '部门', width: 150, align: 'center',
+                formatter: function (value, row, index) {
+                    return row.department.name;
+                }
+            },
+
+            {
+                field: 'department.id', title: '部门id', width: 150, align: 'center',
+                formatter: function (value, row, index) {
+                    return row.department.id;
+                }
+            },
+
+        ]],
+        fit: true,
+        singleSelect:true,/*只能选中一行*/
+        fitColumns: true,/*真正的自动展开/收缩列的大小，以适应网格的宽度，防止水平滚动。*/
+        rownumbers: true,/*显示行号*/
+        pagination: true,/*如果为true，则在数据表格控件底部显示分页工具栏。*/
+        pageNumber: 1,/*初始页码*/
+        pageSize: 10,//每页的记录数
+        toolbar: [{
+            iconCls: 'icon-edit',
+            text: "编辑",
+            handler: function () {  //点击编辑按钮时执行的方法
+          /*获取表格中被选中的行(这个行的数据)*/
+           var rowdata= $('#dg').datagrid("getSelected");
+           console.log(rowdata);
+           if(rowdata==null){
+               $.messager.alert("温馨提示","还未选中数据");
+               return;
+           }
+           else{
+               /*因为我们之前可能加载了数据到表单中--即回显数据到表单故每次调用时要清空表单的数据*/
+               /*但是呢要选中才能编辑，每次选中时都会重新加载数据到表单所以这个可以不加*/
+               $("#myform1").form("clear");
+                console.log(rowdata);/*打印选中行的数据*/
+               $('#myadddialog').dialog("open")/*默认情况下对话框被关闭-点击 编辑打开对话框*/
+               /*设置对话框标题*/
+               $('#myadddialog').dialog("setTitle","编辑员工")
+               /*$('#myadddialog').dialog({
+                   title: '编辑员工',
+                   width: 400,
+                   height: 300,
+                   closed: false,
+                   cache: false,
+                   modal: false,/!*是否对话框遮盖底部*!/
+                   buttons: [{
+                       text: '保存编辑',
+                       iconCls: 'icon-add',
+                       handler: function () {
+                           /!*使用ajax方式提交表单参数--这种ajax的形式是easyui封装好的--注意
+                           * 但是它并不会自动将应答返回的JSON字符串向我们之前的ajax一样自动转JSON对象
+                           * （之前我们设置期望的返回值类型是一个JSON，故内部会自动转换）
+                           * 故现在我们要自己手动将应答返回的JSON字符串转为JSON
+                           *!/
+                           $('#myform1').form('submit', {
+                               url:"employee.json",
+                               onSubmit: function(){
+                                   // do some check
+                                   // return false to prevent submit;
+                               },
+                               success:function(data){  /!*请求成功，应答返回数据时执行的方法*!/
+                                   /!* data= $.parseJSON(data);*!/
+                                   data=JSON.parse(data);/!*json字符串转为json对象*!/
+                                   if(data.success)
+                                   {
+                                       alert(data.msg);
+                                       /!*重新加载表格  *!/
+                                       $('#dg').datagrid("reload");
+                                       /!*关闭对话框*!/
+                                       $('#myadddialog').dialog("close")
+                                       //location.reload();
+                                   }
+                                   else{
+                                       alert(data.msg);
+                                   }
+                               }
+                           });
+
+
+
+                       }
+                   },
+                       {
+                           iconCls: 'icon-cancel',
+                           text: '关闭',
+                           handler: function () {
+                               $('#myadddialog').dialog("close");
+                           }
+                       }]
+               })*/
+               rowdata["department.id"]=rowdata["department"].id;
+               /*回显数据到表单时要把boolean类型数据转为字符型--记录
+               * 如果某个字段是 一个对象类型的数据则无法直接使用要提出来，重新设置字段名--记录
+               * */
+               if(rowdata["state"])
+               {
+                   rowdata["state"]="true";
+               }
+               else{
+                   rowdata["state"]="false";
+               }
+               /*加载一个JSON字符串中的数据，或JS对象中的数据到表单form中(即回显数据到表单)
+               （根据同名匹配的规则 字段名与表单input中的name属性去匹配）---记录*/
+              $("#myform1").form("load",rowdata);
+           }
+
+
+            }
+        }
+            , {
+                iconCls: 'icon-add',
+                text: "添加",
+                handler: function () {/*点击该添加按钮时的回调方法*/
+                    /*因为我们之前可能加载了数据到表单中--即回显数据到表单故每次调用时要清空表单的数据--记录*/
+                   /*添加之前要清空表单数据*/
+                    $('#myadddialog').form("clear");
+                    /*默认情况下对话框被关闭-点击添加打开对话框*/
+                    $('#myadddialog').dialog("open")
+                    /*设置对话框标题*/
+                    $('#myadddialog').dialog("setTitle","添加员工")
+                 /*   $('#myadddialog').dialog({
+                        title: '添加员工',
+                        width: 400,
+                        height: 300,
+                        closed: false,
+                        cache: false,
+                        modal: false,/!*是否对话框遮盖底部*!/
+                        buttons: [{
+                            text: '保存',
+                            iconCls: 'icon-add',
+                            handler: function () {
+                             /!*使用ajax方式提交表单参数--这种ajax的形式是easyui封装好的--注意
+                             * 但是它并不会自动将应答返回的JSON字符串向我们之前的ajax一样自动转JSON对象
+                             * （之前我们设置期望的返回值类型是一个JSON，故内部会自动转换）
+                             * 故现在我们要自己手动将应答返回的JSON字符串转为JSON
+                             *!/
+                                $('#myform1').form('submit', {
+                                    url:"employee.json",
+                                    onSubmit: function(){
+                                        // do some check
+                                        // return false to prevent submit;
+                                    },
+                                    success:function(data){  /!*请求成功，应答返回数据时执行的方法*!/
+                                    /!* data= $.parseJSON(data);*!/
+                                      data=JSON.parse(data);/!*json字符串转为json对象*!/
+                                        if(data.success)
+                                        {
+                                         alert(data.msg);
+                                            /!*重新加载表格  *!/
+                                            $('#dg').datagrid("reload");
+                                            /!*关闭对话框*!/
+                                            $('#myadddialog').dialog("close")
+                                         //location.reload();
+                                        }
+                                        else{
+                                           alert(data.msg);
+                                        }
+                                    }
+                                });
+
+
+
+                            }
+                        },
+                            {
+                                iconCls: 'icon-cancel',
+                                text: '关闭',
+                                handler: function () {
+                                    $('#myadddialog').dialog("close");
+                                }
+                            }]
+                    })*/
+                }
+            },
+            {
+                iconCls: 'icon-remove',
+                text: "删除",
+                handler: function () {
+                    alert('删除按钮')
+                }
+            },
+            {
+                iconCls: 'icon-reload',
+                text: "刷新",
+                handler: function () {
+                    alert('刷新按钮')
+                }
+            },
+
+
+        ]
+
+    });
+
+    $('#dg').datagrid({
+        fitColumns: true
+    });
+
+
+</script>
+
+</html>
